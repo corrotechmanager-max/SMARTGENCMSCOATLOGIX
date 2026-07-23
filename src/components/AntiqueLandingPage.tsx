@@ -8,6 +8,7 @@ import {
   EyeOff, 
   Info
 } from "lucide-react";
+import { ShieldLogoSvg, CmsHighlightBadge } from "./BrandLogo";
 
 interface AntiqueLandingPageProps {
   onLogin: () => void;
@@ -284,69 +285,31 @@ export default function AntiqueLandingPage({ onLogin }: AntiqueLandingPageProps)
           </motion.div>
         )}
 
-        {/* Highlighted Brand Block matching user's logo exactly */}
+        {/* Highlighted Brand Block with Image 3 Logo and Highlighted CMS */}
         <motion.div 
           initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.7, ease: "easeOut" }}
-          className="w-full text-center md:text-left flex flex-col md:flex-row items-center gap-6 bg-gradient-to-r from-amber-500/[0.04] to-transparent p-6 rounded-2xl border border-white/[0.04] shadow-[0_8px_32px_rgba(0,0,0,0.3)] backdrop-blur-sm"
+          className="w-full text-center md:text-left flex flex-col md:flex-row items-center gap-6 bg-gradient-to-r from-amber-500/[0.06] via-amber-500/[0.02] to-transparent p-6 rounded-2xl border border-amber-500/20 shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-sm"
         >
-          {/* Custom High-Fidelity SVG Shield matching the image's logo structure */}
+          {/* Image 3 Shield Logo SVG */}
           <div className="relative shrink-0">
-            <div className="absolute inset-0 bg-amber-500/15 rounded-full blur-xl animate-pulse" />
-            <svg 
-              className="w-16 h-16 text-amber-500 relative z-10 filter drop-shadow-[0_0_12px_rgba(245,158,11,0.7)]" 
-              viewBox="0 0 100 110" 
-              fill="none" 
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              {/* Outer Golden Shield Shield */}
-              <path 
-                d="M50 8 L88 24 V58 C88 83 50 98 50 98 C50 98 12 83 12 58 V24 L50 8 Z" 
-                stroke="url(#shieldGoldGradient2)" 
-                strokeWidth="4.5" 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-              />
-              
-              {/* Secondary partial inner boundary */}
-              <path 
-                d="M50 20 L76 31 V56 C76 74 50 86 50 86 C50 86 24 74 24 56 V31 L50 20 Z" 
-                stroke="#d97706" 
-                strokeWidth="2.5" 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                opacity="0.5" 
-              />
-              
-              {/* High tech inner custom schematic lines */}
-              <path 
-                d="M38 40 H62 V52 H46 V62 H62 V72 H38" 
-                stroke="#f59e0b" 
-                strokeWidth="4" 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-              />
-              
-              <defs>
-                <linearGradient id="shieldGoldGradient2" x1="12" y1="8" x2="88" y2="98" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#fbbf24" />
-                  <stop offset="0.5" stopColor="#f59e0b" />
-                  <stop offset="100%" stopColor="#b45309" />
-                </linearGradient>
-              </defs>
-            </svg>
+            <div className="absolute inset-0 bg-amber-500/20 rounded-full blur-xl animate-pulse" />
+            <ShieldLogoSvg className="w-16 h-18 md:w-20 md:h-22 relative z-10" />
           </div>
 
-          <div className="text-center md:text-left space-y-1.5">
-            <h1 className="font-display font-black text-4xl tracking-tight text-white leading-none">
+          <div className="text-center md:text-left space-y-2">
+            <h1 className="font-display font-black text-3xl md:text-4xl tracking-tight text-white leading-none">
               SMARTGEN
             </h1>
-            <h2 className="font-display font-extrabold text-2xl tracking-widest text-[#f59e0b] leading-none mt-1">
-              COATLOGIX <span className="text-sm align-super font-semibold">®</span>
+            <div className="my-1 inline-flex items-center">
+              <CmsHighlightBadge size="md" />
+            </div>
+            <h2 className="font-display font-extrabold text-2xl md:text-3xl tracking-widest text-[#f59e0b] leading-none">
+              COATLOGIX <span className="text-sm align-super font-semibold text-amber-400">®</span>
             </h2>
-            <div className="inline-block mt-2">
-              <span className="font-mono text-[9px] tracking-[0.16em] text-white bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/25 font-bold uppercase">
+            <div className="inline-block pt-1">
+              <span className="font-mono text-[9px] md:text-[10px] tracking-[0.18em] text-amber-100 bg-amber-950/80 px-3 py-1 rounded-full border border-amber-500/35 font-bold uppercase shadow-inner">
                 INTELLIGENT INTEGRITY. ENGINEERED PROTECTION
               </span>
             </div>
@@ -484,7 +447,7 @@ export default function AntiqueLandingPage({ onLogin }: AntiqueLandingPageProps)
           3. INDUSTRIAL FOOTER SECTION
          ========================================================================= */}
       <footer className="w-full text-center py-5 border-t border-white/[0.04] bg-[#03060c] z-10 font-mono text-[9px] tracking-[0.25em] text-gray-500 uppercase">
-        [ SMARTGEN COATLOGIX SYSTEMS • ESTD 2026 ]
+        [ SMARTGEN CMS COATLOGIX SYSTEMS • ESTD 2026 ]
       </footer>
 
     </div>

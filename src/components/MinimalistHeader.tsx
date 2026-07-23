@@ -1,4 +1,5 @@
 import { ArrowLeft, LogOut } from "lucide-react";
+import { ShieldLogoSvg, CmsHighlightBadge } from "./BrandLogo";
 
 interface MinimalistHeaderProps {
   activePage: string;
@@ -16,6 +17,7 @@ export default function MinimalistHeader({ activePage, setActivePage, onLogout }
             onClick={() => setActivePage("Dashboard")}
             className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 border border-white/5 transition-all cursor-pointer group"
             id="header-back-btn"
+            title="Return to Dashboard"
           >
             <ArrowLeft size={14} className="text-amber-500 group-hover:-translate-x-0.5 transition-transform" />
             <span>Portal Dashboard</span>
@@ -31,49 +33,22 @@ export default function MinimalistHeader({ activePage, setActivePage, onLogout }
           id="header-home-btn"
           title="Return to Dashboard"
         >
-          {/* Custom SVG Golden Shield */}
-          <svg 
-            className="w-8 h-9 md:w-10 md:h-11 drop-shadow-[0_0_15px_rgba(245,158,11,0.35)] transition-transform duration-300 group-hover:scale-105" 
-            viewBox="0 0 100 115" 
-            fill="none" 
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            {/* Outer Shield Border */}
-            <path 
-              d="M50 5 L90 25 V65 C90 85 70 105 50 110 C30 105 10 85 10 65 V25 L50 5 Z" 
-              stroke="url(#headerGoldGrad)" 
-              strokeWidth="7" 
-              fill="rgba(10, 14, 26, 0.4)" 
-              strokeLinejoin="round" 
-            />
-            {/* Inner shield core lines (stylized G/S protection barrier) */}
-            <path 
-              d="M50 22 L73 33.5 V57 C73 70 63 84 50 88 C37 84 27 70 27 57 V45 H50 V54 H38 V57 C38 65 43 74 50 77 C57 74 62 65 62 57 V39 L50 33 L38 39" 
-              stroke="url(#headerGoldGrad)" 
-              strokeWidth="5" 
-              fill="none" 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
-            />
-            <defs>
-              <linearGradient id="headerGoldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#f59e0b" />
-                <stop offset="40%" stopColor="#fbbf24" />
-                <stop offset="100%" stopColor="#b45309" />
-              </linearGradient>
-            </defs>
-          </svg>
+          {/* Image 3 Shield Logo SVG */}
+          <ShieldLogoSvg className="w-8 h-9 md:w-10 md:h-11 group-hover:scale-105" />
 
           {/* Typography */}
-          <div className="flex flex-col text-left leading-none">
-            <span className="text-sm md:text-lg font-black tracking-wider text-white font-sans uppercase">
+          <div className="flex flex-col text-left leading-none space-y-0.5">
+            <span className="text-sm md:text-base font-black tracking-wider text-white font-sans uppercase">
               SMARTGEN
             </span>
-            <span className="text-[10px] md:text-[13px] font-black tracking-wide text-amber-500 font-sans uppercase flex items-center">
+            <div className="inline-flex items-center my-0.5">
+              <CmsHighlightBadge size="sm" />
+            </div>
+            <span className="text-[10px] md:text-[12px] font-black tracking-wide text-amber-500 font-sans uppercase flex items-center">
               COATLOGIX
               <span className="text-[7px] md:text-[8px] align-super ml-0.5 font-bold">®</span>
             </span>
-            <span className="text-[7px] md:text-[8.5px] text-amber-500/80 tracking-widest font-bold font-mono mt-1.5 uppercase block">
+            <span className="text-[6.5px] md:text-[8px] text-amber-500/80 tracking-widest font-bold font-mono uppercase block pt-0.5">
               [ Intelligent Integrity. Engineered Protection ]
             </span>
           </div>

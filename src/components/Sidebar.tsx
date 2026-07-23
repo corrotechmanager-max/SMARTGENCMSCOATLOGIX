@@ -12,6 +12,7 @@ import {
   X,
   Zap
 } from "lucide-react";
+import { ShieldLogoSvg, CmsHighlightBadge } from "./BrandLogo";
 
 const navItems = [
   { name: "Dashboard", icon: LayoutDashboard },
@@ -49,13 +50,14 @@ export default function Sidebar({ activePage, setActivePage, isOpen, setIsOpen }
         }`}
       >
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center font-black text-gray-950 font-sans shadow-lg shadow-amber-500/15">
-              C
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-white tracking-tight leading-none">CorroTech</h1>
-              <span className="text-[10px] text-amber-500 font-semibold tracking-wider uppercase">Manager</span>
+          <div className="flex items-center gap-2.5">
+            <ShieldLogoSvg className="w-8 h-9" />
+            <div className="flex flex-col text-left leading-none space-y-0.5">
+              <h1 className="text-xs font-black text-white tracking-wider uppercase font-sans">SMARTGEN</h1>
+              <div className="my-0.5">
+                <CmsHighlightBadge size="sm" />
+              </div>
+              <span className="text-[10px] font-bold text-amber-500 tracking-wide uppercase">COATLOGIX ®</span>
             </div>
           </div>
           {/* Close button for mobile */}
