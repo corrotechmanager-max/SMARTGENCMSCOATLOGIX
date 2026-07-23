@@ -4,6 +4,7 @@ import {
   Box, Plus, Pencil, Trash2, Clock, MapPin, AlertCircle, FileSpreadsheet, X, Search, FileUp, Filter 
 } from "lucide-react";
 import { Asset } from "../types";
+import { subscribeToStore, saveToStore } from "../lib/firebase";
 
 // Default pre-seeded assets matching the dashboard counts: GOOD 3, FAIR 0, POOR 1, CRITICAL 0
 const DEFAULT_ASSETS: Asset[] = [
@@ -81,42 +82,31 @@ export default function AssetsPage() {
   const [formLastInspected, setFormLastInspected] = useState("");
   const [formNotes, setFormNotes] = useState("");
 
-  // Load from LocalStorage or pre-seed
+  // Live Firebase cloud sync for assets and locations
   useEffect(() => {
-    const stored = localStorage.getItem("corrotech_assets");
-    if (stored) {
-      try {
-        setAssets(JSON.parse(stored));
-      } catch (e) {
-        setAssets(DEFAULT_ASSETS);
-      }
-    } else {
-      setAssets(DEFAULT_ASSETS);
-      localStorage.setItem("corrotech_assets", JSON.stringify(DEFAULT_ASSETS));
-    }
+    const unsubAssets = subscribeToStore<Asset>("corrotech_assets", DEFAULT_ASSETS, (cloudAssets) => {
+      setAssets(cloudAssets);
+    });
 
-    const storedLocs = localStorage.getItem("corrotech_locations");
-    if (storedLocs) {
-      try {
-        setLocations(JSON.parse(storedLocs));
-      } catch (e) {
-        setLocations(DEFAULT_LOCATIONS);
-      }
-    } else {
-      setLocations(DEFAULT_LOCATIONS);
-      localStorage.setItem("corrotech_locations", JSON.stringify(DEFAULT_LOCATIONS));
-    }
+    const unsubLocs = subscribeToStore<LocationRecord>("corrotech_locations", DEFAULT_LOCATIONS, (cloudLocs) => {
+      setLocations(cloudLocs);
+    });
+
+    return () => {
+      unsubAssets();
+      unsubLocs();
+    };
   }, []);
 
-  // Save to LocalStorage helpers
+  // Save helpers syncing to LocalStorage and Cloud Firestore
   const saveAssets = (updatedAssets: Asset[]) => {
     setAssets(updatedAssets);
-    localStorage.setItem("corrotech_assets", JSON.stringify(updatedAssets));
+    saveToStore("corrotech_assets", updatedAssets);
   };
 
   const saveLocations = (updatedLocs: LocationRecord[]) => {
     setLocations(updatedLocs);
-    localStorage.setItem("corrotech_locations", JSON.stringify(updatedLocs));
+    saveToStore("corrotech_locations", updatedLocs);
   };
 
   const showLocationError = (msg: string) => {

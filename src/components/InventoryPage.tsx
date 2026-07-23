@@ -26,6 +26,7 @@ import {
 import { InventoryItem, IssuedPaintRecord, Job } from "../types";
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
+import { subscribeToStore, saveToStore } from "../lib/firebase";
 
 // Helper utilities to parse and convert CSS OKLCH and OKLAB color formats to standard RGB/RGBA.
 // This is critical to prevent html2canvas's CSS parser from crashing on modern CSS color functions.
@@ -327,38 +328,20 @@ export default function InventoryPage() {
   const [notes, setNotes] = useState("");
 
   // Load items & issued records from local storage
+  // Live Firebase cloud sync for inventory, issued paint, and jobs
   useEffect(() => {
-    const stored = localStorage.getItem("corrotech_inventory");
-    if (stored) {
-      try {
-        setItems(JSON.parse(stored));
-      } catch (e) {
-        setItems(DEFAULT_INVENTORY);
-      }
-    } else {
-      setItems(DEFAULT_INVENTORY);
-      localStorage.setItem("corrotech_inventory", JSON.stringify(DEFAULT_INVENTORY));
-    }
+    const unsubItems = subscribeToStore<InventoryItem>("corrotech_inventory", DEFAULT_INVENTORY, (cloudItems) => {
+      setItems(cloudItems);
+    });
 
-    const storedIssued = localStorage.getItem("corrotech_issued_paint");
-    if (storedIssued) {
-      try {
-        setIssuedRecords(JSON.parse(storedIssued));
-      } catch (e) {
-        setIssuedRecords(DEFAULT_ISSUED_PAINT);
-      }
-    } else {
-      setIssuedRecords(DEFAULT_ISSUED_PAINT);
-      localStorage.setItem("corrotech_issued_paint", JSON.stringify(DEFAULT_ISSUED_PAINT));
-    }
+    const unsubIssued = subscribeToStore<IssuedPaintRecord>("corrotech_issued_paint", DEFAULT_ISSUED_PAINT, (cloudIssued) => {
+      setIssuedRecords(cloudIssued);
+    });
 
-    // Load active jobs for dropdown list
-    const storedJobs = localStorage.getItem("corrotech_jobs");
-    if (storedJobs) {
-      try {
-        const parsedJobs: Job[] = JSON.parse(storedJobs);
-        setJobs(parsedJobs.map(j => ({ id: j.id, title: j.title })));
-      } catch (e) {
+    const unsubJobs = subscribeToStore<Job>("corrotech_jobs", [], (cloudJobs) => {
+      if (cloudJobs.length > 0) {
+        setJobs(cloudJobs.map(j => ({ id: j.id, title: j.title })));
+      } else {
         setJobs([
           { id: "job-1", title: "Offshore Riser R-4 Corrosion Treatment" },
           { id: "job-2", title: "Main Platform Deck Recoating" },
@@ -366,26 +349,25 @@ export default function InventoryPage() {
           { id: "job-4", title: "SPIC Marine Dock Structural Integrity Camp" }
         ]);
       }
-    } else {
-      setJobs([
-        { id: "job-1", title: "Offshore Riser R-4 Corrosion Treatment" },
-        { id: "job-2", title: "Main Platform Deck Recoating" },
-        { id: "job-3", title: "Helideck Non-Slip Paint Application" },
-        { id: "job-4", title: "SPIC Marine Dock Structural Integrity Camp" }
-      ]);
-    }
+    });
+
+    return () => {
+      unsubItems();
+      unsubIssued();
+      unsubJobs();
+    };
   }, []);
 
-  // Save items helper
+  // Save items helper syncing to LocalStorage and Cloud Firestore
   const saveItems = (updatedItems: InventoryItem[]) => {
     setItems(updatedItems);
-    localStorage.setItem("corrotech_inventory", JSON.stringify(updatedItems));
+    saveToStore("corrotech_inventory", updatedItems);
   };
 
-  // Save issued records helper
+  // Save issued records helper syncing to LocalStorage and Cloud Firestore
   const saveIssuedRecords = (updatedRecords: IssuedPaintRecord[]) => {
     setIssuedRecords(updatedRecords);
-    localStorage.setItem("corrotech_issued_paint", JSON.stringify(updatedRecords));
+    saveToStore("corrotech_issued_paint", updatedRecords);
   };
 
   // Open Issue Paint modal helper

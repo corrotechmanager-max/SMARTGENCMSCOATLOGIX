@@ -1,0 +1,35 @@
+{
+  "entities": {
+    "jobs": {
+      "title": "Jobs",
+      "description": "Corrosion mitigation job plans and work orders",
+      "properties": {
+        "id": { "type": "string" },
+        "jobName": { "type": "string" },
+        "clientName": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string" }
+      }
+    },
+    "inventory": {
+      "title": "Inventory Items",
+      "description": "Coating paints, abrasive media, and safety equipment",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "stock": { "type": "number" }
+      }
+    },
+    "reports": {
+      "title": "Corrosion Reports",
+      "description": "AI-generated corrosion analysis diagnostic reports",
+      "properties": {
+        "id": { "type": "string" },
+        "assetName": { "type": "string" },
+        "overallConditionScore": { "type": "number" },
+        "createdAt": { "type": "string" }
+      }
+    }
+  }
+}

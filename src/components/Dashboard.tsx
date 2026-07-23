@@ -15,6 +15,8 @@ import {
   Network,
   PlayCircle
 } from "lucide-react";
+import { subscribeToStore } from "../lib/firebase";
+import { Asset, Job } from "../types";
 
 interface DashboardProps {
   setActivePage: (page: string) => void;
@@ -28,62 +30,51 @@ export default function Dashboard({ setActivePage }: DashboardProps) {
   const [inProgressJobsCount, setInProgressJobsCount] = useState<number>(2);
 
   useEffect(() => {
-    // Load Assets
-    const storedAssets = localStorage.getItem("corrotech_assets");
-    let assetCount = 4;
-    let criticalAssetsCount = 1; // Default is 1 (Offshore Riser R-4 is Poor)
-    if (storedAssets) {
-      try {
-        const assets = JSON.parse(storedAssets);
-        if (Array.isArray(assets)) {
-          assetCount = assets.length;
-          criticalAssetsCount = assets.filter(
-            (a) => a.condition === "Critical" || a.condition === "Poor"
-          ).length;
-        }
-      } catch (e) {
-        console.error("Failed to parse assets from local storage", e);
-      }
-    }
-    setTotalAssets(assetCount);
-
-    // Load Jobs
-    const storedJobs = localStorage.getItem("corrotech_jobs");
-    let projectCount = 1; // Default SPIC Marine Dock is 1
+    let criticalAssetsCount = 1;
     let overdueCount = 0;
-    let pendingJobsCount = 3;
-    let inProgressCount = 2; // Default has 2 In Progress jobs
-    if (storedJobs) {
-      try {
-        let jobs = JSON.parse(storedJobs);
-        if (Array.isArray(jobs)) {
-          // Filter out specific target items
-          jobs = jobs.filter((j) => {
-            const isTargetTitle = j.title && (
-              j.title.toLowerCase().includes("maintenance bldg") ||
-              j.title.toLowerCase().includes("entrance steel structure")
-            );
-            const isTargetLocation = j.siteLocation && j.siteLocation.toLowerCase().includes("maintenance building");
-            return !(isTargetTitle && isTargetLocation);
-          });
-          projectCount = jobs.filter((j) => j.type === "Project").length;
-          overdueCount = jobs.filter((j) => j.status === "Overdue").length;
-          pendingJobsCount = jobs.filter(
-            (j) => j.status !== "Completed" && j.status !== "Cancelled"
-          ).length;
-          inProgressCount = jobs.filter((j) => j.status === "In Progress").length;
-        }
-      } catch (e) {
-        console.error("Failed to parse jobs from local storage", e);
-      }
-    }
-    setActiveProjects(projectCount);
-    setPendingJobs(pendingJobsCount);
-    setInProgressJobsCount(inProgressCount);
 
-    // AI Alerts: Critical/Poor Assets + Overdue Jobs
-    const alerts = criticalAssetsCount + overdueCount;
-    setAiAlerts(alerts > 0 ? alerts : 1);
+    const unsubAssets = subscribeToStore<Asset>("corrotech_assets", [], (assets) => {
+      if (Array.isArray(assets) && assets.length > 0) {
+        setTotalAssets(assets.length);
+        criticalAssetsCount = assets.filter(
+          (a) => a.condition === "Critical" || a.condition === "Poor"
+        ).length;
+      }
+      const alerts = criticalAssetsCount + overdueCount;
+      setAiAlerts(alerts > 0 ? alerts : 1);
+    });
+
+    const unsubJobs = subscribeToStore<Job>("corrotech_jobs", [], (rawJobs) => {
+      if (Array.isArray(rawJobs) && rawJobs.length > 0) {
+        const jobs = rawJobs.filter((j) => {
+          const isTargetTitle = j.title && (
+            j.title.toLowerCase().includes("maintenance bldg") ||
+            j.title.toLowerCase().includes("entrance steel structure")
+          );
+          const isTargetLocation = j.siteLocation && j.siteLocation.toLowerCase().includes("maintenance building");
+          return !(isTargetTitle && isTargetLocation);
+        });
+
+        const projectCount = jobs.filter((j) => j.type === "Project").length;
+        overdueCount = jobs.filter((j) => j.status === "Overdue").length;
+        const pendingJobsCount = jobs.filter(
+          (j) => j.status !== "Completed" && j.status !== "Cancelled"
+        ).length;
+        const inProgressCount = jobs.filter((j) => j.status === "In Progress").length;
+
+        setActiveProjects(projectCount);
+        setPendingJobs(pendingJobsCount);
+        setInProgressJobsCount(inProgressCount);
+      }
+
+      const alerts = criticalAssetsCount + overdueCount;
+      setAiAlerts(alerts > 0 ? alerts : 1);
+    });
+
+    return () => {
+      unsubAssets();
+      unsubJobs();
+    };
   }, []);
 
   // Features list mapping to the 9 portal cards (excluding Dashboard which is the header)

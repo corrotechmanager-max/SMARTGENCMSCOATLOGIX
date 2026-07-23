@@ -8,6 +8,7 @@ import {
 import { Job } from "../types";
 import JobModal from "./JobModal";
 import { downloadJobWordReport, downloadJobPdfReport, downloadJobCsvReport } from "../utils/jobReport";
+import { subscribeToStore, saveToStore } from "../lib/firebase";
 
 // Initial default jobs matching realistic scenarios
 const DEFAULT_JOBS: Job[] = [
@@ -207,38 +208,28 @@ export default function JobPlanner({ initialTab }: JobPlannerProps = {}) {
     return getJobsForDate(selectedDateStr);
   }, [jobs, selectedDateStr]);
 
-  // Load from LocalStorage or pre-seed
+  // Live Cloud Sync via Firebase Firestore
   useEffect(() => {
-    const stored = localStorage.getItem("corrotech_jobs");
-    let loadedJobs: Job[] = [];
-    if (stored) {
-      try {
-        loadedJobs = JSON.parse(stored);
-      } catch (e) {
-        loadedJobs = [...DEFAULT_JOBS];
-      }
-    } else {
-      loadedJobs = [...DEFAULT_JOBS];
-    }
-
-    // Filter out "Maintenance Bldg NW side Entrance Steel Structure" at "Maintenance Building"
-    const filtered = loadedJobs.filter((j) => {
-      const isTargetTitle = j.title && (
-        j.title.toLowerCase().includes("maintenance bldg") ||
-        j.title.toLowerCase().includes("entrance steel structure")
-      );
-      const isTargetLocation = j.siteLocation && j.siteLocation.toLowerCase().includes("maintenance building");
-      return !(isTargetTitle && isTargetLocation);
+    const unsubscribe = subscribeToStore<Job>("corrotech_jobs", DEFAULT_JOBS, (cloudJobs) => {
+      // Filter out unwanted items
+      const filtered = cloudJobs.filter((j) => {
+        const isTargetTitle = j.title && (
+          j.title.toLowerCase().includes("maintenance bldg") ||
+          j.title.toLowerCase().includes("entrance steel structure")
+        );
+        const isTargetLocation = j.siteLocation && j.siteLocation.toLowerCase().includes("maintenance building");
+        return !(isTargetTitle && isTargetLocation);
+      });
+      setJobs(filtered);
     });
 
-    setJobs(filtered);
-    localStorage.setItem("corrotech_jobs", JSON.stringify(filtered));
+    return () => unsubscribe();
   }, []);
 
-  // Save helper
+  // Save helper syncing to LocalStorage and Cloud Firestore
   const saveJobs = (updatedJobs: Job[]) => {
     setJobs(updatedJobs);
-    localStorage.setItem("corrotech_jobs", JSON.stringify(updatedJobs));
+    saveToStore("corrotech_jobs", updatedJobs);
   };
 
   const stats = useMemo(() => {
