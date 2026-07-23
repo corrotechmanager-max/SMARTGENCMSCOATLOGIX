@@ -1,0 +1,6 @@
+{
+  "name": "CorroTechManager",
+  "description": "Professional industrial asset management dashboard system with AI analysis.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
