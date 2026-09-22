@@ -7,6 +7,22 @@ import { Asset } from "../types";
 import { subscribeToStore, saveToStore } from "../lib/firebase";
 
 // Default pre-seeded assets matching the dashboard counts: GOOD 3, FAIR 0, POOR 1, CRITICAL 0
+export const ASSET_TYPE_OPTIONS = [
+  "Pipeline",
+  "Tank",
+  "Structure",
+  "Vessel",
+  "Marine",
+  "Heavy duty Vehicle/equipment",
+  "Stacker / Reclaimer & Bulk Handling",
+  "Crane & Lifting Equipment",
+  "Rotating Equipment (Pump / Compressor)",
+  "Heat Exchanger / Boiler",
+  "Piping & Valve Skid",
+  "Electrical & Instrumentation",
+  "Other"
+];
+
 const DEFAULT_ASSETS: Asset[] = [
   {
     id: "asset-1",
@@ -76,7 +92,7 @@ export default function AssetsPage() {
 
   // Form State
   const [formName, setFormName] = useState("");
-  const [formType, setFormType] = useState("Other");
+  const [formType, setFormType] = useState("Heavy duty Vehicle/equipment");
   const [formCondition, setFormCondition] = useState<"Good" | "Fair" | "Poor" | "Critical">("Good");
   const [formLocation, setFormLocation] = useState("");
   const [formLastInspected, setFormLastInspected] = useState("");
@@ -191,7 +207,7 @@ export default function AssetsPage() {
   const handleOpenAddModal = () => {
     setEditingAsset(null);
     setFormName("");
-    setFormType("Other");
+    setFormType("Heavy duty Vehicle/equipment");
     setFormCondition("Good");
     setFormLocation(locations.length > 0 ? locations[0].name : "");
     setFormLastInspected(new Date().toISOString().split("T")[0]);
@@ -633,12 +649,15 @@ export default function AssetsPage() {
                       onChange={(e) => setFormType(e.target.value)}
                       className="w-full bg-[#171513] border border-gray-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-amber-500/50"
                     >
-                      <option value="Pipeline">Pipeline</option>
-                      <option value="Tank">Tank</option>
-                      <option value="Structure">Structure</option>
-                      <option value="Vessel">Vessel</option>
-                      <option value="Marine">Marine</option>
-                      <option value="Other">Other</option>
+                      {ASSET_TYPE_OPTIONS.map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                      {/* Allow any existing custom type if not present in defaults */}
+                      {formType && !ASSET_TYPE_OPTIONS.includes(formType as any) && (
+                        <option value={formType}>{formType}</option>
+                      )}
                     </select>
                   </div>
 

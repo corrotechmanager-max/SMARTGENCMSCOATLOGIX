@@ -30,6 +30,20 @@
         "overallConditionScore": { "type": "number" },
         "createdAt": { "type": "string" }
       }
+    },
+    "defects": {
+      "title": "Defect Log",
+      "description": "Corrosion damage defect records, severity metrics, and remediation tracking",
+      "properties": {
+        "id": { "type": "string" },
+        "defectCode": { "type": "string" },
+        "title": { "type": "string" },
+        "assetName": { "type": "string" },
+        "defectType": { "type": "string" },
+        "severity": { "type": "string" },
+        "status": { "type": "string" },
+        "reportedDate": { "type": "string" }
+      }
     }
   }
 }

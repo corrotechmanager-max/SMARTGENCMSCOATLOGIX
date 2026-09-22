@@ -18,6 +18,72 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok", mode: process.env.NODE_ENV, hasApiKey: !!process.env.GEMINI_API_KEY });
 });
 
+// Roles & Permissions Matrix
+const ROLE_PERMISSIONS: Record<string, { role: string; accessibleModules: string[]; lockedModules: string[] }> = {
+  operator: {
+    role: "Anti Corrosion Team",
+    accessibleModules: ["Dashboard", "Projects", "In Progress Jobs", "Calculator", "AI Analysis", "Job Planner", "Assets", "Inventory", "Defect Log", "Reports", "Settings"],
+    lockedModules: []
+  },
+  defect_requester: {
+    role: "Defect Requester",
+    accessibleModules: ["Defect Log"],
+    lockedModules: ["Projects", "In Progress Jobs", "Calculator", "AI Analysis", "Job Planner", "Assets", "Inventory", "Reports", "Settings"]
+  }
+};
+
+// Role-based authentication endpoint
+app.post("/api/auth/login", (req, res) => {
+  const { username, password, role = "operator" } = req.body;
+
+  if (!username) {
+    return res.status(400).json({ error: "Username is required" });
+  }
+
+  if (role !== "defect_requester" && !password) {
+    return res.status(400).json({ error: "Password is required" });
+  }
+
+  const roleKey = role === "defect_requester" ? "defect_requester" : "operator";
+  const permissions = ROLE_PERMISSIONS[roleKey];
+
+  const userProfile = {
+    id: `usr_${Date.now()}`,
+    name: username.trim(),
+    email: username.includes("@") ? username.trim() : `${username.trim().toLowerCase().replace(/\s+/g, ".")}@coatlogix.com`,
+    role: permissions.role,
+    roleType: roleKey,
+    permissions: roleKey === "defect_requester" ? ["defect_log:read", "defect_log:create", "defect_log:edit"] : ["*"],
+    accessibleModules: permissions.accessibleModules,
+    lockedModules: permissions.lockedModules,
+    token: `tok_${roleKey}_${Buffer.from(username).toString("base64").slice(0, 12)}_${Date.now()}`
+  };
+
+  return res.json({
+    success: true,
+    user: userProfile
+  });
+});
+
+app.get("/api/auth/roles", (req, res) => {
+  res.json({
+    roles: [
+      {
+        id: "operator",
+        label: "Authorized Operator / Engineer",
+        description: "Full system engineering permissions across all modules",
+        allowedModules: ["*"]
+      },
+      {
+        id: "defect_requester",
+        label: "Defect Requester",
+        description: "Restricted role strictly for logging, reporting, and tracking defects",
+        allowedModules: ["Defect Log"]
+      }
+    ]
+  });
+});
+
 // Lazy-initialize Google GenAI so it won't crash on startup if key is missing
 let aiClient: GoogleGenAI | null = null;
 function getGenAI() {
@@ -83,6 +149,13 @@ async function generateContentWithRetry(
 
 // AI Analysis Endpoint supporting both Manual text parameters and Visual vision mode
 app.post("/api/analyze-corrosion", async (req, res) => {
+  const userRole = req.headers["x-user-role"] || req.body?.userRole;
+  if (userRole === "defect_requester") {
+    return res.status(403).json({
+      error: "Access Denied: Defect Requester role is restricted from AI engineering analysis. Only Defect Log is permitted."
+    });
+  }
+
   const { mode, parameters, images } = req.body;
 
   // Mode: "manual" or "visual"

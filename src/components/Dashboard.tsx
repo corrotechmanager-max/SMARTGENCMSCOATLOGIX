@@ -10,24 +10,38 @@ import {
   Settings,
   ArrowUpRight,
   Shield,
+  ShieldAlert,
   Activity,
   Zap,
   Network,
-  PlayCircle
+  PlayCircle,
+  Lock,
+  X
 } from "lucide-react";
 import { subscribeToStore } from "../lib/firebase";
-import { Asset, Job } from "../types";
+import { Asset, Job, DefectRecord } from "../types";
 
 interface DashboardProps {
   setActivePage: (page: string) => void;
+  userRole?: "operator" | "defect_requester";
 }
 
-export default function Dashboard({ setActivePage }: DashboardProps) {
+export default function Dashboard({ setActivePage, userRole }: DashboardProps) {
+  const isDefectRequester = userRole === "defect_requester" || 
+    (typeof window !== "undefined" && localStorage.getItem("coatlogix_user_role") === "defect_requester");
+
+  const [lockedNotice, setLockedNotice] = useState<{
+    isOpen: boolean;
+    moduleName: string;
+    description?: string;
+  }>({ isOpen: false, moduleName: "" });
+
   const [totalAssets, setTotalAssets] = useState<number>(4);
   const [activeProjects, setActiveProjects] = useState<number>(1);
   const [aiAlerts, setAiAlerts] = useState<number>(1);
   const [pendingJobs, setPendingJobs] = useState<number>(3);
   const [inProgressJobsCount, setInProgressJobsCount] = useState<number>(2);
+  const [defectsCount, setDefectsCount] = useState<number>(3);
 
   useEffect(() => {
     let criticalAssetsCount = 1;
@@ -42,6 +56,13 @@ export default function Dashboard({ setActivePage }: DashboardProps) {
       }
       const alerts = criticalAssetsCount + overdueCount;
       setAiAlerts(alerts > 0 ? alerts : 1);
+    });
+
+    const unsubDefects = subscribeToStore<DefectRecord>("corrotech_defects", [], (defects) => {
+      if (Array.isArray(defects) && defects.length > 0) {
+        const active = defects.filter(d => d.status !== "Resolved").length;
+        setDefectsCount(active > 0 ? active : defects.length);
+      }
     });
 
     const unsubJobs = subscribeToStore<Job>("corrotech_jobs", [], (rawJobs) => {
@@ -74,10 +95,11 @@ export default function Dashboard({ setActivePage }: DashboardProps) {
     return () => {
       unsubAssets();
       unsubJobs();
+      unsubDefects();
     };
   }, []);
 
-  // Features list mapping to the 9 portal cards (excluding Dashboard which is the header)
+  // Features list mapping to the portal cards (excluding Dashboard which is the header)
   const portalFeatures = [
     {
       id: "projects",
@@ -106,6 +128,15 @@ export default function Dashboard({ setActivePage }: DashboardProps) {
       color: "text-amber-500",
       description: "Preventative & schedules",
       target: "Job Planner"
+    },
+    {
+      id: "defect_log",
+      name: "Defect Log",
+      icon: ShieldAlert,
+      caption: `${defectsCount} Active Defect Reports`,
+      color: "text-amber-500",
+      description: "Report corrosion & damage",
+      target: "Defect Log"
     },
     {
       id: "calculator",
@@ -155,7 +186,7 @@ export default function Dashboard({ setActivePage }: DashboardProps) {
   ];
 
   return (
-    <div className="flex-1 min-h-0 bg-[#060913] text-white flex flex-col justify-center items-center relative overflow-y-auto px-6 py-12 md:py-16">
+    <div className="flex-1 min-h-0 bg-[#060913] text-white flex flex-col items-center relative overflow-y-auto px-4 sm:px-6 py-6 md:py-8">
       
       {/* Background Effect: High-fidelity corrosion prevention & cathodic protection field lines */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden select-none">
@@ -238,12 +269,46 @@ export default function Dashboard({ setActivePage }: DashboardProps) {
       </div>
 
       <div className="max-w-5xl w-full z-10 relative flex flex-col pt-4">
+
+        {/* DEFECT REQUESTER RESTRICTED SESSION BANNER */}
+        {isDefectRequester && (
+          <div className="w-full mb-4 p-4 rounded-2xl bg-gradient-to-r from-amber-950/70 via-black/80 to-amber-950/50 border border-amber-500/40 shadow-[0_0_30px_rgba(245,158,11,0.2)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 backdrop-blur-md">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center shrink-0 shadow-inner">
+                <ShieldAlert size={22} className="animate-pulse text-amber-400" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-mono text-xs font-black uppercase tracking-wider text-amber-300">
+                    DEFECT REQUESTER SESSION ACTIVE
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase">
+                    DEFECT LOG ACCESS ONLY
+                  </span>
+                </div>
+                <p className="text-[11px] font-mono text-gray-300 mt-0.5">
+                  Your role is authorized for the <strong>Defect Log</strong>. Other engineering modules and consoles are locked in view-only mode.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setActivePage("Defect Log")}
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-gray-950 font-mono text-xs font-black uppercase tracking-wider flex items-center gap-2 shrink-0 transition-all cursor-pointer shadow-lg shadow-amber-500/25 active:scale-95"
+              id="dashboard-jump-defect-btn"
+            >
+              <ShieldAlert size={14} className="stroke-[2.5]" />
+              <span>Open Defect Log</span>
+              <ArrowUpRight size={13} className="stroke-[3]" />
+            </button>
+          </div>
+        )}
+
         {/* Inner Container for Cards and Interconnected Flowing Lines */}
         <div className="relative w-full py-6">
           
           {/* SVG Connection Lines: Weaves from card to card with moving glowing telemetry dot streams */}
           <div className="absolute inset-0 pointer-events-none hidden lg:block select-none">
-            <svg className="w-full h-full min-h-[460px]" viewBox="0 0 1000 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg className="w-full h-full min-h-[480px]" viewBox="0 0 1000 480" fill="none" xmlns="http://www.w3.org/2000/svg">
               <defs>
                 <linearGradient id="line-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
                   <stop offset="0%" stopColor="rgba(245, 158, 11, 0.15)" />
@@ -256,29 +321,33 @@ export default function Dashboard({ setActivePage }: DashboardProps) {
                 </filter>
               </defs>
 
-              {/* Data streams / interconnected lines path definitions */}
-              <path id="path-1-2" d="M 125,90 L 375,150" stroke="url(#line-gradient)" strokeWidth="1.5" />
-              <path id="path-2-3" d="M 375,150 L 625,90" stroke="url(#line-gradient)" strokeWidth="1.5" />
-              <path id="path-3-4" d="M 625,90 L 875,150" stroke="url(#line-gradient)" strokeWidth="1.5" />
+              {/* Data streams / interconnected lines path definitions for 3x3 grid */}
+              <path id="path-1-2" d="M 165,80 L 500,80" stroke="url(#line-gradient)" strokeWidth="1.5" />
+              <path id="path-2-3" d="M 500,80 L 835,80" stroke="url(#line-gradient)" strokeWidth="1.5" />
+              <path id="path-4-5" d="M 165,240 L 500,240" stroke="url(#line-gradient)" strokeWidth="1.5" />
+              <path id="path-5-6" d="M 500,240 L 835,240" stroke="url(#line-gradient)" strokeWidth="1.5" />
+              <path id="path-7-8" d="M 165,400 L 500,400" stroke="url(#line-gradient)" strokeWidth="1.5" />
+              <path id="path-8-9" d="M 500,400 L 835,400" stroke="url(#line-gradient)" strokeWidth="1.5" />
 
-              <path id="path-1-5" d="M 125,90 L 125,270" stroke="url(#line-gradient)" strokeWidth="1" strokeDasharray="3,3" />
-              <path id="path-2-6" d="M 375,150 L 375,330" stroke="url(#line-gradient)" strokeWidth="1" strokeDasharray="3,3" />
-              <path id="path-3-7" d="M 625,90 L 625,270" stroke="url(#line-gradient)" strokeWidth="1" strokeDasharray="3,3" />
-              <path id="path-4-8" d="M 875,150 L 875,330" stroke="url(#line-gradient)" strokeWidth="1" strokeDasharray="3,3" />
+              {/* Vertical data stream lines */}
+              <path id="path-1-4" d="M 165,80 L 165,240" stroke="url(#line-gradient)" strokeWidth="1" strokeDasharray="3,3" />
+              <path id="path-4-7" d="M 165,240 L 165,400" stroke="url(#line-gradient)" strokeWidth="1" strokeDasharray="3,3" />
+              <path id="path-2-5" d="M 500,80 L 500,240" stroke="url(#line-gradient)" strokeWidth="1" strokeDasharray="3,3" />
+              <path id="path-5-8" d="M 500,240 L 500,400" stroke="url(#line-gradient)" strokeWidth="1" strokeDasharray="3,3" />
+              <path id="path-3-6" d="M 835,80 L 835,240" stroke="url(#line-gradient)" strokeWidth="1" strokeDasharray="3,3" />
+              <path id="path-6-9" d="M 835,240 L 835,400" stroke="url(#line-gradient)" strokeWidth="1" strokeDasharray="3,3" />
 
-              <path id="path-5-6" d="M 125,270 L 375,330" stroke="url(#line-gradient)" strokeWidth="1.5" />
-              <path id="path-6-7" d="M 375,330 L 625,270" stroke="url(#line-gradient)" strokeWidth="1.5" />
-              <path id="path-7-8" d="M 625,270 L 875,330" stroke="url(#line-gradient)" strokeWidth="1.5" />
+              {/* Diagonal cross traces */}
+              <path d="M 165,80 L 500,240" stroke="rgba(245, 158, 11, 0.07)" strokeWidth="1" />
+              <path d="M 500,80 L 165,240" stroke="rgba(245, 158, 11, 0.07)" strokeWidth="1" />
+              <path d="M 500,80 L 835,240" stroke="rgba(245, 158, 11, 0.07)" strokeWidth="1" />
+              <path d="M 835,80 L 500,240" stroke="rgba(245, 158, 11, 0.07)" strokeWidth="1" />
+              <path d="M 165,240 L 500,400" stroke="rgba(245, 158, 11, 0.07)" strokeWidth="1" />
+              <path d="M 500,240 L 165,400" stroke="rgba(245, 158, 11, 0.07)" strokeWidth="1" />
+              <path d="M 500,240 L 835,400" stroke="rgba(245, 158, 11, 0.07)" strokeWidth="1" />
+              <path d="M 835,240 L 500,400" stroke="rgba(245, 158, 11, 0.07)" strokeWidth="1" />
 
-              {/* Hexagonal diagonal connections to complete the molecular/schematic look */}
-              <path d="M 125,90 L 375,330" stroke="rgba(245, 158, 11, 0.08)" strokeWidth="1" />
-              <path d="M 125,270 L 375,150" stroke="rgba(245, 158, 11, 0.08)" strokeWidth="1" />
-              <path d="M 625,90 L 375,330" stroke="rgba(245, 158, 11, 0.08)" strokeWidth="1" />
-              <path d="M 625,270 L 375,150" stroke="rgba(245, 158, 11, 0.08)" strokeWidth="1" />
-              <path d="M 625,90 L 875,330" stroke="rgba(245, 158, 11, 0.08)" strokeWidth="1" />
-              <path d="M 625,270 L 875,150" stroke="rgba(245, 158, 11, 0.08)" strokeWidth="1" />
-
-              {/* Glowing animated dots running along the data stream lines */}
+              {/* Glowing animated telemetry pulses */}
               <circle r="4" fill="#fbbf24" filter="url(#glow-effect)">
                 <animateMotion dur="4.5s" repeatCount="indefinite">
                   <mpath href="#path-1-2" />
@@ -291,17 +360,17 @@ export default function Dashboard({ setActivePage }: DashboardProps) {
               </circle>
               <circle r="4" fill="#fbbf24" filter="url(#glow-effect)">
                 <animateMotion dur="5.5s" repeatCount="indefinite">
-                  <mpath href="#path-3-4" />
+                  <mpath href="#path-4-5" />
                 </animateMotion>
               </circle>
               <circle r="3" fill="#fbbf24" filter="url(#glow-effect)">
                 <animateMotion dur="5s" repeatCount="indefinite">
-                  <mpath href="#path-6-7" />
+                  <mpath href="#path-5-6" />
                 </animateMotion>
               </circle>
               <circle r="4" fill="#f59e0b" filter="url(#glow-effect)">
                 <animateMotion dur="7s" repeatCount="indefinite">
-                  <mpath href="#path-7-8" />
+                  <mpath href="#path-8-9" />
                 </animateMotion>
               </circle>
             </svg>
@@ -309,8 +378,22 @@ export default function Dashboard({ setActivePage }: DashboardProps) {
 
           {/* SEPARATE, HIGHLY HIGHLIGHTED IN-PROGRESS OPERATIONS COMMAND HUB PANEL */}
           <div 
-            onClick={() => setActivePage("In Progress Jobs")}
-            className="w-full max-w-6xl mb-6 relative z-10 p-4 md:p-5 rounded-2xl bg-gradient-to-r from-[#21160d] via-[#0b101d] to-[#121c2d] border border-amber-500/80 hover:border-amber-400 shadow-[0_0_25px_rgba(245,158,11,0.25)] hover:shadow-[0_0_40px_rgba(245,158,11,0.45)] transition-all duration-300 cursor-pointer group overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+            onClick={() => {
+              if (isDefectRequester) {
+                setLockedNotice({
+                  isOpen: true,
+                  moduleName: "In-Progress Campaigns",
+                  description: "Execution monitoring and active campaigns console is restricted to Authorized Operators. As a Defect Requester, your active permissions are scoped to the Defect Log."
+                });
+                return;
+              }
+              setActivePage("In Progress Jobs");
+            }}
+            className={`w-full max-w-6xl mb-6 relative z-10 p-4 md:p-5 rounded-2xl transition-all duration-300 overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+              isDefectRequester
+                ? "bg-gradient-to-r from-[#18110b] via-[#090d18] to-[#0f1624] border border-amber-500/40 opacity-75 hover:opacity-90 cursor-not-allowed shadow-[0_0_15px_rgba(245,158,11,0.1)]"
+                : "bg-gradient-to-r from-[#21160d] via-[#0b101d] to-[#121c2d] border border-amber-500/80 hover:border-amber-400 shadow-[0_0_25px_rgba(245,158,11,0.25)] hover:shadow-[0_0_40px_rgba(245,158,11,0.45)] cursor-pointer group"
+            }`}
             id="portal-card-in-progress-hub"
           >
             {/* Ambient Animated Protection Field Lines & Wavefront */}
@@ -322,13 +405,27 @@ export default function Dashboard({ setActivePage }: DashboardProps) {
 
             <div className="flex items-center gap-4 relative z-10">
               <div className="w-11 h-11 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center shadow-[0_0_15px_rgba(245,158,11,0.2)] group-hover:scale-105 transition-transform duration-300 shrink-0">
-                <PlayCircle size={22} className="animate-[pulse_1.5s_infinite] text-amber-400" />
+                {isDefectRequester ? (
+                  <Lock size={20} className="text-amber-400/80" />
+                ) : (
+                  <PlayCircle size={22} className="animate-[pulse_1.5s_infinite] text-amber-400" />
+                )}
               </div>
               
               <div className="space-y-0.5">
-                <h2 className="text-base md:text-lg font-bold tracking-tight text-white group-hover:text-amber-400 transition-colors uppercase">
-                  In-Progress Campaigns
-                </h2>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base md:text-lg font-bold tracking-tight text-white group-hover:text-amber-400 transition-colors uppercase">
+                    In-Progress Campaigns
+                  </h2>
+                  {isDefectRequester && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-950/80 text-amber-400 border border-amber-500/30 uppercase">
+                      <Lock size={10} /> Locked
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-gray-400 font-mono">
+                  {isDefectRequester ? "Requires Operator authorization to execute campaigns" : "Active corrosion remediation campaigns in the field"}
+                </p>
               </div>
             </div>
 
@@ -339,9 +436,22 @@ export default function Dashboard({ setActivePage }: DashboardProps) {
                 </span>
               </div>
               
-              <div className="inline-flex items-center gap-1 bg-amber-500 text-gray-950 px-4 py-2 rounded-xl text-[11px] font-bold font-mono tracking-wider uppercase transition-all duration-300 shadow-lg group-hover:bg-amber-400 group-hover:shadow-[0_0_15px_rgba(245,158,11,0.3)]">
-                <span>VIEW ACTIVE CONSOLE</span>
-                <ArrowUpRight size={12} className="stroke-[3]" />
+              <div className={`inline-flex items-center gap-1 px-4 py-2 rounded-xl text-[11px] font-bold font-mono tracking-wider uppercase transition-all duration-300 shadow-lg ${
+                isDefectRequester
+                  ? "bg-amber-950/60 text-amber-400 border border-amber-500/30 hover:bg-amber-900/60"
+                  : "bg-amber-500 text-gray-950 group-hover:bg-amber-400 group-hover:shadow-[0_0_15px_rgba(245,158,11,0.3)]"
+              }`}>
+                {isDefectRequester ? (
+                  <>
+                    <Lock size={12} />
+                    <span>LOCKED OVERVIEW</span>
+                  </>
+                ) : (
+                  <>
+                    <span>VIEW ACTIVE CONSOLE</span>
+                    <ArrowUpRight size={12} className="stroke-[3]" />
+                  </>
+                )}
               </div>
             </div>
 
@@ -351,42 +461,83 @@ export default function Dashboard({ setActivePage }: DashboardProps) {
           </div>
 
           {/* Symmetrical Grid of Cards with Hexagonal Flow */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 relative z-10 w-full max-w-6xl">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10 w-full max-w-6xl">
             {portalFeatures.map((feat, index) => {
               const Icon = feat.icon;
+              const isDefectLog = feat.target === "Defect Log";
+              const isCardLocked = isDefectRequester && !isDefectLog;
 
               return (
                 <div
                   key={feat.id}
-                  onClick={() => setActivePage(feat.target)}
-                  className={`group relative p-6 rounded-2xl border transition-all duration-300 cursor-pointer flex flex-col justify-between min-h-[175px] text-left select-none ${
-                    feat.isActiveState
-                      ? "bg-amber-950/40 border-2 border-amber-500 shadow-[0_0_25px_rgba(245,158,11,0.25)] text-amber-400"
-                      : "bg-[#0e1322]/85 border-white/5 text-white hover:border-amber-500/40 hover:bg-[#131b2e] hover:shadow-[0_0_20px_rgba(245,158,11,0.15)] hover:-translate-y-1"
+                  onClick={() => {
+                    if (isCardLocked) {
+                      setLockedNotice({
+                        isOpen: true,
+                        moduleName: feat.name,
+                        description: `The ${feat.name} module is locked for your current role (Defect Requester). Your permissions are strictly designated for submitting and monitoring corrosion defect logs.`
+                      });
+                      return;
+                    }
+                    setActivePage(feat.target);
+                  }}
+                  className={`group relative p-6 rounded-2xl border transition-all duration-300 flex flex-col justify-between min-h-[175px] text-left select-none ${
+                    isCardLocked
+                      ? "bg-[#090d18]/70 border-white/5 text-gray-400 opacity-65 hover:opacity-85 hover:border-amber-500/30 cursor-not-allowed"
+                      : isDefectRequester && isDefectLog
+                      ? "bg-amber-950/50 border-2 border-amber-500 shadow-[0_0_35px_rgba(245,158,11,0.35)] text-amber-400 cursor-pointer hover:scale-[1.02]"
+                      : feat.isActiveState
+                      ? "bg-amber-950/40 border-2 border-amber-500 shadow-[0_0_25px_rgba(245,158,11,0.25)] text-amber-400 cursor-pointer"
+                      : "bg-[#0e1322]/85 border-white/5 text-white hover:border-amber-500/40 hover:bg-[#131b2e] hover:shadow-[0_0_20px_rgba(245,158,11,0.15)] hover:-translate-y-1 cursor-pointer"
                   }`}
                   id={`portal-card-${feat.id}`}
                 >
-                  {/* Subtle index tag */}
-                  <span className="absolute top-4 right-4 font-mono text-[9px] text-gray-600 group-hover:text-amber-500/40 font-bold transition-colors">
-                    0{index + 1}
-                  </span>
+                  {/* Subtle index tag or locked badge */}
+                  <div className="absolute top-4 right-4 flex items-center gap-1.5">
+                    {isCardLocked ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[8.5px] font-mono font-bold bg-amber-950/90 text-amber-400 border border-amber-500/30 uppercase tracking-wider">
+                        <Lock size={9} />
+                        <span>LOCKED</span>
+                      </span>
+                    ) : isDefectRequester && isDefectLog ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[8.5px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase tracking-wider">
+                        <span>✓ UNLOCKED</span>
+                      </span>
+                    ) : (
+                      <span className="font-mono text-[9px] text-gray-600 group-hover:text-amber-500/40 font-bold transition-colors">
+                        {index + 1 < 10 ? `0${index + 1}` : `${index + 1}`}
+                      </span>
+                    )}
+                  </div>
 
                   {/* Icon & Label */}
                   <div className="space-y-4">
                     <div className={`w-11 h-11 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${
-                      feat.isActiveState 
+                      isCardLocked
+                        ? "bg-white/5 text-gray-500 group-hover:text-amber-400"
+                        : (isDefectRequester && isDefectLog) || feat.isActiveState
                         ? "bg-amber-500/20 text-amber-400" 
                         : "bg-white/5 text-amber-500/90 group-hover:bg-amber-500/10 group-hover:text-amber-400"
                     }`}>
-                      <Icon size={22} className={feat.id === "ai_analysis" ? "animate-[pulse_2s_infinite]" : ""} />
+                      {isCardLocked ? (
+                        <Icon size={22} className="opacity-60" />
+                      ) : (
+                        <Icon size={22} className={feat.id === "ai_analysis" || (isDefectRequester && isDefectLog) ? "animate-[pulse_2s_infinite]" : ""} />
+                      )}
                     </div>
 
                     <div className="space-y-1">
-                      <h3 className="font-mono text-xs font-bold uppercase tracking-widest text-white group-hover:text-amber-400 transition-colors">
-                        {feat.name}
-                      </h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className={`font-mono text-xs font-bold uppercase tracking-widest transition-colors ${
+                          isCardLocked ? "text-gray-300 group-hover:text-amber-400" : "text-white group-hover:text-amber-400"
+                        }`}>
+                          {feat.name}
+                        </h3>
+                      </div>
                       {feat.description && (
-                        <p className="text-gray-400 text-xs leading-relaxed line-clamp-2">
+                        <p className={`text-xs leading-relaxed line-clamp-2 ${
+                          isCardLocked ? "text-gray-500" : "text-gray-400"
+                        }`}>
                           {feat.description}
                         </p>
                       )}
@@ -395,18 +546,28 @@ export default function Dashboard({ setActivePage }: DashboardProps) {
 
                   {/* Telemetry/Data Snippet Caption */}
                   <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-[11px] font-mono">
-                    <span className={`font-semibold ${feat.isActiveState ? "text-amber-400 font-bold animate-pulse" : "text-amber-500/95"}`}>
-                      {feat.caption}
+                    <span className={`font-semibold ${
+                      isCardLocked
+                        ? "text-gray-500"
+                        : (isDefectRequester && isDefectLog) || feat.isActiveState 
+                        ? "text-amber-400 font-bold animate-pulse" 
+                        : "text-amber-500/95"
+                    }`}>
+                      {isCardLocked ? `Locked (${feat.caption})` : feat.caption}
                     </span>
-                    <ArrowUpRight size={13} className="text-gray-500 group-hover:text-amber-400 transition-colors" />
+                    {isCardLocked ? (
+                      <Lock size={12} className="text-amber-500/40 group-hover:text-amber-400" />
+                    ) : (
+                      <ArrowUpRight size={13} className="text-gray-500 group-hover:text-amber-400 transition-colors" />
+                    )}
                   </div>
 
                   {/* Corner Accent for the active state card */}
-                  {feat.isActiveState && (
-                    <div className="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-amber-400 rounded-tl-md" />
-                  )}
-                  {feat.isActiveState && (
-                    <div className="absolute -bottom-1 -right-1 w-3 h-3 border-b-2 border-r-2 border-amber-400 rounded-br-md" />
+                  {((isDefectRequester && isDefectLog) || feat.isActiveState) && (
+                    <>
+                      <div className="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-amber-400 rounded-tl-md" />
+                      <div className="absolute -bottom-1 -right-1 w-3 h-3 border-b-2 border-r-2 border-amber-400 rounded-br-md" />
+                    </>
                   )}
                 </div>
               );
@@ -414,6 +575,72 @@ export default function Dashboard({ setActivePage }: DashboardProps) {
           </div>
 
         </div>
+
+        {/* RESTRICTION MODAL DIALOG WHEN DEFECT REQUESTER CLICKS LOCKED MODULE */}
+        {lockedNotice.isOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+            <div className="max-w-md w-full bg-[#0d1322] border-2 border-amber-500/50 rounded-2xl p-6 md:p-7 shadow-[0_0_60px_rgba(245,158,11,0.35)] relative overflow-hidden text-left space-y-5">
+              
+              {/* Top ambient glow */}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 blur-2xl pointer-events-none" />
+
+              <div className="flex items-start justify-between">
+                <div className="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center shadow-[0_0_20px_rgba(245,158,11,0.25)] shrink-0">
+                  <Lock size={24} className="text-amber-400 animate-pulse" />
+                </div>
+                <button
+                  onClick={() => setLockedNotice({ isOpen: false, moduleName: "" })}
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+                  title="Close Notice"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 font-mono text-[9.5px] font-bold uppercase tracking-wider">
+                  <ShieldAlert size={12} />
+                  <span>ROLE PERMISSION RESTRICTION</span>
+                </div>
+                <h3 className="text-lg md:text-xl font-black text-white uppercase tracking-tight font-display">
+                  {lockedNotice.moduleName} Is Locked
+                </h3>
+                <p className="text-xs font-mono text-gray-300 leading-relaxed">
+                  {lockedNotice.description || "This module is locked for the Defect Requester role. Your account permissions are restricted strictly to the Defect Log."}
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-black/50 border border-white/5 font-mono text-[10.5px] space-y-1.5 text-gray-400">
+                <div className="flex items-center justify-between text-amber-400 font-bold border-b border-white/5 pb-1">
+                  <span>ACTIVE ROLE</span>
+                  <span className="text-amber-300">DEFECT REQUESTER</span>
+                </div>
+                <p>• Permitted Module: <span className="text-emerald-400 font-bold">Defect Log</span></p>
+                <p>• Elevation: <span className="text-gray-400">Contact Anti-Corrosion Admin for Operator Access</span></p>
+              </div>
+
+              <div className="pt-2 flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={() => {
+                    setLockedNotice({ isOpen: false, moduleName: "" });
+                    setActivePage("Defect Log");
+                  }}
+                  className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-display font-black text-xs tracking-wider uppercase flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-amber-500/25 active:scale-95"
+                >
+                  <ShieldAlert size={14} className="stroke-[2.5]" />
+                  <span>Go to Defect Log</span>
+                </button>
+                <button
+                  onClick={() => setLockedNotice({ isOpen: false, moduleName: "" })}
+                  className="py-3 px-4 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border border-white/10 font-mono text-xs uppercase tracking-wider font-bold cursor-pointer"
+                >
+                  Dismiss
+                </button>
+              </div>
+
+            </div>
+          </div>
+        )}
 
         {/* Bottom Technical Status Line (Anti-AI-Slop Clean Label) */}
         <footer className="mt-12 text-center text-[10px] font-mono text-gray-600">

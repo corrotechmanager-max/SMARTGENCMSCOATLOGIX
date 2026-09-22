@@ -168,4 +168,35 @@ export interface IssuedPaintRecord {
   requestingDept?: string;
 }
 
+export interface DefectRecord {
+  id: string;
+  defectCode: string;
+  title?: string;
+  assetId?: string;
+  assetName: string;
+  location: string;
+  defectType: string;
+  severity: "Critical" | "Major" | "Moderate" | "Minor";
+  status: "Open" | "Under Investigation" | "Remediation Scheduled" | "Resolved";
+  reportedDate: string;
+  reportedBy: string;
+  department?: string;
+  estimatedAreaSqM?: number;
+  description: string;
+  correctiveAction?: string;
+  photoUrl?: string;
+}
+
+export type UserRole = "operator" | "defect_requester";
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  role: "Authorized Operator" | "Defect Requester";
+  roleType: UserRole;
+  registeredAt: string;
+}
+
+
 

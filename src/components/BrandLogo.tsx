@@ -1,9 +1,15 @@
 import React from "react";
 
-export function ShieldLogoSvg({ className = "w-10 h-11" }: { className?: string }) {
+export function ShieldLogoSvg({ 
+  className = "w-10 h-11",
+  innerFill = "rgba(245, 158, 11, 0.12)"
+}: { 
+  className?: string;
+  innerFill?: string;
+}) {
   return (
     <svg 
-      className={`drop-shadow-[0_0_16px_rgba(245,158,11,0.4)] transition-transform duration-300 ${className}`} 
+      className={`drop-shadow-[0_0_16px_rgba(245,158,11,0.35)] transition-transform duration-300 ${className}`} 
       viewBox="0 0 100 115" 
       fill="none" 
       xmlns="http://www.w3.org/2000/svg"
@@ -13,7 +19,7 @@ export function ShieldLogoSvg({ className = "w-10 h-11" }: { className?: string 
         d="M50 6 L88 23 V58 C88 80 68 98 50 106 C32 98 12 80 12 58 V23 L50 6 Z" 
         stroke="url(#img3GoldGrad)" 
         strokeWidth="6" 
-        fill="rgba(15, 23, 42, 0.4)"
+        fill={innerFill}
         strokeLinecap="round" 
         strokeLinejoin="round" 
       />
