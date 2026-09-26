@@ -102,6 +102,23 @@ export const DEFECT_TYPES = [
   "Other"
 ];
 
+export const DEPARTMENT_OPTIONS = [
+  "Anti Corrosion Department",
+  "Scaffolding",
+  "HVAC",
+  "Civil",
+  "Fire Fighting",
+  "Electrical",
+  "Turbine",
+  "Boiler",
+  "I&C",
+  "Coal Operation",
+  "Chemical",
+  "Administration",
+  "Resident Area",
+  "Warehouse Management"
+] as const;
+
 interface DefectLogPageProps {
   userRole?: "operator" | "defect_requester";
 }
@@ -131,6 +148,7 @@ export default function DefectLogPage({ userRole }: DefectLogPageProps = {}) {
   const [formStatus, setFormStatus] = useState<"Open" | "Under Investigation" | "Remediation Scheduled" | "Resolved">("Open");
   const [formReportedBy, setFormReportedBy] = useState("Mansoor Ahmed (Anti Corrosion Officer)");
   const [formDepartment, setFormDepartment] = useState("Anti Corrosion Department");
+  const [isCustomDept, setIsCustomDept] = useState(false);
   const [formCorrectiveAction, setFormCorrectiveAction] = useState("");
 
   // Real-time synchronization
@@ -198,8 +216,9 @@ export default function DefectLogPage({ userRole }: DefectLogPageProps = {}) {
     setFormDefectType("Pitting Corrosion");
     setFormSeverity("Major");
     setFormStatus("Open");
-    setFormReportedBy("Mansoor Ahmed (Anti Corrosion Officer)");
+    setFormReportedBy(isDefectRequester ? "Defect Requester" : "Mansoor Ahmed (Anti Corrosion Officer)");
     setFormDepartment("Anti Corrosion Department");
+    setIsCustomDept(false);
     setFormCorrectiveAction("");
     setIsModalOpen(true);
   };
@@ -215,7 +234,9 @@ export default function DefectLogPage({ userRole }: DefectLogPageProps = {}) {
     setFormSeverity(defect.severity);
     setFormStatus(defect.status);
     setFormReportedBy(defect.reportedBy);
-    setFormDepartment(defect.department || "Anti Corrosion Department");
+    const currentDept = defect.department || "Anti Corrosion Department";
+    setFormDepartment(currentDept);
+    setIsCustomDept(!DEPARTMENT_OPTIONS.includes(currentDept as any));
     setFormCorrectiveAction(defect.correctiveAction || "");
     setIsModalOpen(true);
   };
@@ -869,24 +890,60 @@ export default function DefectLogPage({ userRole }: DefectLogPageProps = {}) {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs text-gray-400 uppercase font-bold tracking-wider font-mono">Department</label>
-                    <input 
-                      type="text"
-                      list="department-options"
-                      value={formDepartment}
-                      onChange={(e) => setFormDepartment(e.target.value)}
-                      placeholder="e.g. Anti Corrosion Department"
-                      className="w-full bg-[#0a0d18] border border-white/10 rounded-xl p-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-amber-500/60 font-sans"
-                    />
-                    <datalist id="department-options">
-                      <option value="Anti Corrosion Department" />
-                      <option value="Corrosion & Coating Division" />
-                      <option value="Inspection & QA/QC" />
-                      <option value="Asset Integrity Management" />
-                      <option value="Mechanical Maintenance" />
-                      <option value="Plant Operations" />
-                      <option value="HSE & Safety" />
-                    </datalist>
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs text-gray-400 uppercase font-bold tracking-wider font-mono">Department</label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextState = !isCustomDept;
+                          setIsCustomDept(nextState);
+                          if (!nextState && !DEPARTMENT_OPTIONS.includes(formDepartment as any)) {
+                            setFormDepartment("Anti Corrosion Department");
+                          }
+                        }}
+                        className="text-[10px] font-mono text-amber-400/90 hover:text-amber-300 underline cursor-pointer"
+                      >
+                        {isCustomDept ? "← Select from List" : "+ Enter Custom"}
+                      </button>
+                    </div>
+
+                    {!isCustomDept ? (
+                      <select 
+                        value={formDepartment}
+                        onChange={(e) => {
+                          if (e.target.value === "__custom__") {
+                            setIsCustomDept(true);
+                            setFormDepartment("");
+                          } else {
+                            setFormDepartment(e.target.value);
+                          }
+                        }}
+                        className="w-full bg-[#0a0d18] border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-amber-500/60 font-sans cursor-pointer"
+                      >
+                        {DEPARTMENT_OPTIONS.map((dept) => (
+                          <option key={dept} value={dept}>
+                            {dept}
+                          </option>
+                        ))}
+                        <option value="__custom__">✏️ Other / Custom Department...</option>
+                      </select>
+                    ) : (
+                      <div className="relative">
+                        <input 
+                          type="text"
+                          list="department-options"
+                          value={formDepartment}
+                          onChange={(e) => setFormDepartment(e.target.value)}
+                          placeholder="Type department name..."
+                          className="w-full bg-[#0a0d18] border border-white/10 rounded-xl p-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-amber-500/60 font-sans"
+                        />
+                        <datalist id="department-options">
+                          {DEPARTMENT_OPTIONS.map((dept) => (
+                            <option key={dept} value={dept} />
+                          ))}
+                        </datalist>
+                      </div>
+                    )}
                   </div>
                 </div>
 
